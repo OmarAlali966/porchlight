@@ -7,7 +7,7 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const { zip, tier, lang } = req.body || {};
+  const { zip, tier, lang, openOnly } = req.body || {};
 
   if (!zip || !/^\d{5}$/.test(zip)) {
     res.status(400).json({ error: 'Invalid ZIP code' });
@@ -31,8 +31,42 @@ module.exports = async function handler(req, res) {
   const allowedLangs = ['en', 'es', 'ar'];
   const languageCode = allowedLangs.indexOf(lang) !== -1 ? lang : 'en';
   const priceLevels = priceLevelMap[String(tier)] || priceLevelMap['2'];
+  const FIVE_MILES_METERS = 8046.72;
 
   try {
+    // Step 1: turn the ZIP into exact coordinates, so we can search a real
+    // 5-mile radius around it instead of just guessing from the ZIP text.
+    const geoRes = await fetch(
+      'https://maps.googleapis.com/maps/api/geocode/json?address=' +
+      encodeURIComponent(zip) + '&key=' + process.env.GOOGLE_PLACES_API_KEY
+    );
+    const geoData = await geoRes.json();
+
+    if (geoData.status !== 'OK' || !geoData.results || !geoData.results.length) {
+      res.status(404).json({ error: 'Could not locate that ZIP code' });
+      return;
+    }
+
+    const center = geoData.results[0].geometry.location; // { lat, lng }
+
+    // Step 2: search restaurants biased to a circle around that exact point.
+    const requestBody = {
+      textQuery: 'restaurants',
+      priceLevels: priceLevels,
+      languageCode: languageCode,
+      pageSize: 20,
+      locationBias: {
+        circle: {
+          center: { latitude: center.lat, longitude: center.lng },
+          radius: FIVE_MILES_METERS
+        }
+      }
+    };
+
+    if (openOnly === true) {
+      requestBody.openNow = true;
+    }
+
     const apiRes = await fetch('https://places.googleapis.com/v1/places:searchText', {
       method: 'POST',
       headers: {
@@ -50,12 +84,7 @@ module.exports = async function handler(req, res) {
           'places.photos'
         ].join(',')
       },
-      body: JSON.stringify({
-        textQuery: 'restaurants near ' + zip,
-        priceLevels: priceLevels,
-        languageCode: languageCode,
-        pageSize: 8
-      })
+      body: JSON.stringify(requestBody)
     });
 
     if (!apiRes.ok) {
@@ -70,7 +99,7 @@ module.exports = async function handler(req, res) {
 
     const skipTypes = ['restaurant', 'food', 'point_of_interest', 'establishment'];
 
-    const restaurants = places.slice(0, 6).map(function (p) {
+    const restaurants = places.slice(0, 18).map(function (p) {
       const types = (p.types || []).filter(function (t) {
         return skipTypes.indexOf(t) === -1;
       });
