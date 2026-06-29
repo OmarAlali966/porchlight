@@ -444,6 +444,43 @@
     object-fit: cover;
     display: block;
   }
+
+  /* ---------- open-now toggle ---------- */
+  .open-toggle-row{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 26px;
+  }
+  .open-toggle{
+    position: relative;
+    width: 40px; height: 22px;
+    border-radius: 12px;
+    background: var(--bg-deep);
+    border: 1px solid var(--line);
+    cursor: pointer;
+    flex: 0 0 auto;
+    padding: 0;
+  }
+  .open-toggle::after{
+    content: "";
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    transition: transform .15s ease, background .15s ease;
+  }
+  .open-toggle[aria-pressed="true"]{ border-color: var(--accent-2); background: var(--accent-soft); }
+  .open-toggle[aria-pressed="true"]::after{ background: var(--accent-2); transform: translateX(18px); }
+  [dir="rtl"] .open-toggle::after{ left: auto; right: 2px; }
+  [dir="rtl"] .open-toggle[aria-pressed="true"]::after{ transform: translateX(-18px); }
+  .open-toggle-label{
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--text);
+    cursor: pointer;
+  }
 </style>
 </head>
 <body>
@@ -461,7 +498,7 @@
   </header>
 
   <section class="hero">
-    <p class="eyebrow" id="eyebrowText">no account &middot; no filters &middot; just dinner</p>
+    <p class="eyebrow" id="eyebrowText">no account &middot; no filters &middot; just food</p>
     <h1><span id="headlineLine1">Where you are.</span><br><span id="headlineLine2Pre">What you'll </span><span class="glow" id="headlineGlow">spend.</span></h1>
     <p class="sub" id="subText">That's all we need. Give us your ZIP code and a budget, and we'll find real restaurants nearby that fit.</p>
   </section>
@@ -491,6 +528,11 @@
       </div>
     </div>
 
+    <div class="open-toggle-row">
+      <button type="button" class="open-toggle" id="openToggle" role="switch" aria-checked="false" aria-pressed="false"></button>
+      <label class="open-toggle-label" id="openToggleLabel" for="openToggle">Open now only</label>
+    </div>
+
     <button type="submit" class="submit" id="submitBtn">Find my table</button>
   </form>
 
@@ -511,10 +553,13 @@
   const submitBtn = document.getElementById('submitBtn');
   const output = document.getElementById('output');
   const langButtons = document.querySelectorAll('.lang-btn');
+  const openToggle = document.getElementById('openToggle');
+  const openToggleLabel = document.getElementById('openToggleLabel');
+  let openOnly = false;
 
   const translations = {
     en: {
-      eyebrow: 'no account · no filters · just dinner',
+      eyebrow: 'no account · no filters · just food',
       headlineLine1: 'Where you are.',
       headlineLine2Pre: "What you'll ",
       headlineGlow: 'spend.',
@@ -526,6 +571,7 @@
       tier2: '$15–30',
       tier3: '$30–60',
       tier4: '$60+',
+      openOnlyLabel: 'Open now only',
       submit: 'Find my table',
       searching: 'Searching…',
       loading: 'Checking the neighborhood',
@@ -546,7 +592,7 @@
       footer: 'Results are pulled live from the web and may change — call ahead to confirm hours and prices.'
     },
     es: {
-      eyebrow: 'sin cuenta · sin filtros · solo cena',
+      eyebrow: 'sin cuenta · sin filtros · solo comida',
       headlineLine1: 'Dónde estás.',
       headlineLine2Pre: 'Y cuánto vas a ',
       headlineGlow: 'gastar.',
@@ -558,6 +604,7 @@
       tier2: '$15–30',
       tier3: '$30–60',
       tier4: '$60+',
+      openOnlyLabel: 'Solo los que están abiertos ahora',
       submit: 'Buscar mesa',
       searching: 'Buscando…',
       loading: 'Revisando el barrio',
@@ -578,7 +625,7 @@
       footer: 'Los resultados se obtienen en vivo de la web y pueden cambiar — llama antes para confirmar horarios y precios.'
     },
     ar: {
-      eyebrow: 'بلا حساب · بلا فلاتر · فقط العشاء',
+      eyebrow: 'بلا حساب · بلا فلاتر · فقط الطعام',
       headlineLine1: 'أين أنت.',
       headlineLine2Pre: 'وكم ',
       headlineGlow: 'ستصرف.',
@@ -590,6 +637,7 @@
       tier2: '15–30$',
       tier3: '30–60$',
       tier4: '+60$',
+      openOnlyLabel: 'المفتوح الآن فقط',
       submit: 'ابحث عن طاولة',
       searching: 'جارٍ البحث…',
       loading: 'نتحقق من المنطقة',
@@ -636,6 +684,7 @@
     document.getElementById('tierLabel').textContent = t('tierLabel');
     document.getElementById('submitBtn').textContent = t('submit');
     document.getElementById('footerText').textContent = t('footer');
+    openToggleLabel.textContent = t('openOnlyLabel');
     zipError.textContent = '';
 
     tierGrid.querySelectorAll('.tier').forEach(function(btn){
@@ -647,6 +696,12 @@
     // rather than show a mismatched mix of languages.
     output.innerHTML = '';
   }
+
+  openToggle.addEventListener('click', function(){
+    openOnly = !openOnly;
+    openToggle.setAttribute('aria-pressed', openOnly ? 'true' : 'false');
+    openToggle.setAttribute('aria-checked', openOnly ? 'true' : 'false');
+  });
 
   langButtons.forEach(function(btn){
     btn.addEventListener('click', function(){
@@ -757,7 +812,7 @@
     const response = await fetch('/api/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ zip: zip, tier: tierValue, lang: currentLang })
+      body: JSON.stringify({ zip: zip, tier: tierValue, lang: currentLang, openOnly: openOnly })
     });
 
     const data = await response.json().catch(function(){ return {}; });
