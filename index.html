@@ -366,6 +366,84 @@
     position:absolute; width:1px; height:1px;
     overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap;
   }
+
+  /* ---------- language switcher ---------- */
+  header.top{ position: relative; }
+  .lang-switch{
+    margin-inline-start: auto;
+    display: flex;
+    gap: 6px;
+  }
+  .lang-btn{
+    background: var(--bg-deep);
+    border: 1px solid var(--line);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 1px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .lang-btn:hover{ border-color: var(--accent-2); }
+  .lang-btn[aria-pressed="true"]{
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--text);
+  }
+
+  /* ---------- open / closed badge ---------- */
+  .hours-badge{
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    padding: 2px 8px 2px 6px;
+    border-radius: 20px;
+    margin-inline-end: 8px;
+  }
+  .hours-badge .dot{
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+  }
+  .hours-badge.open{ background: rgba(78,205,196,0.14); color: var(--accent-2); }
+  .hours-badge.open .dot{ background: var(--accent-2); }
+  .hours-badge.closed{ background: rgba(255,107,53,0.14); color: var(--accent); }
+  .hours-badge.closed .dot{ background: var(--accent); }
+
+  /* ---------- RTL (Arabic) ---------- */
+  [dir="rtl"] .tier{
+    text-align: right;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%);
+    padding: 12px 18px 12px 14px;
+  }
+  [dir="rtl"] .stamp{ right: auto; left: 16px; transform: rotate(9deg); }
+  [dir="rtl"] .ticket h3{ padding-right: 0; padding-left: 50px; }
+  /* ---------- photo + clickable card ---------- */
+  a.ticket{
+    display: block;
+    color: inherit;
+    text-decoration: none;
+    transition: transform .12s ease, border-color .12s ease;
+  }
+  a.ticket:hover{ transform: translateY(-2px); border-color: var(--accent-2); }
+  a.ticket:focus-visible{ outline: 2px solid var(--accent-2); outline-offset: 3px; }
+
+  .ticket-photo{
+    margin: -22px -20px 14px;
+    height: 140px;
+    overflow: hidden;
+    border-radius: 6px 6px 0 0;
+    background: var(--bg-deep);
+  }
+  .ticket-photo img{
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
 </style>
 </head>
 <body>
@@ -375,17 +453,22 @@
   <header class="top">
     <svg class="mark" viewBox="0 0 30 30"><path d="M15 3 C9 3 5 8 5 14 C5 21 15 27 15 27 C15 27 25 21 25 14 C25 8 21 3 15 3 Z M15 11 a3 3 0 1 0 0.1 0"/></svg>
     <span class="wordmark">PORCH<span>LIGHT</span></span>
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" data-lang="en" aria-pressed="true">EN</button>
+      <button type="button" class="lang-btn" data-lang="es" aria-pressed="false">ES</button>
+      <button type="button" class="lang-btn" data-lang="ar" aria-pressed="false">عربي</button>
+    </div>
   </header>
 
   <section class="hero">
-    <p class="eyebrow">no account &middot; no filters &middot; just dinner</p>
-    <h1>Where you are.<br>What you'll <span class="glow">spend.</span></h1>
-    <p class="sub">That's all we need. Give us your ZIP code and a budget, and we'll find real restaurants nearby that fit.</p>
+    <p class="eyebrow" id="eyebrowText">no account &middot; no filters &middot; just dinner</p>
+    <h1><span id="headlineLine1">Where you are.</span><br><span id="headlineLine2Pre">What you'll </span><span class="glow" id="headlineGlow">spend.</span></h1>
+    <p class="sub" id="subText">That's all we need. Give us your ZIP code and a budget, and we'll find real restaurants nearby that fit.</p>
   </section>
 
   <form class="search" id="searchForm" novalidate>
     <div class="zip-row">
-      <label class="field-label" for="zip">Zip code</label>
+      <label class="field-label" for="zip" id="zipLabel">Zip code</label>
       <input type="text" id="zip" name="zip" inputmode="numeric" maxlength="5" placeholder="33139" autocomplete="postal-code">
       <div class="zip-error" id="zipError" role="alert"></div>
     </div>
@@ -393,17 +476,17 @@
     <div>
       <span class="field-label" id="tierLabel">Budget per person</span>
       <div class="tier-grid" role="group" aria-labelledby="tierLabel" id="tierGrid">
-        <button type="button" class="tier" data-tier="1" data-label="$ (under $15 per person)" aria-pressed="false">
-          <span class="sign">$</span><span class="range">Under $15</span>
+        <button type="button" class="tier" data-tier="1" data-sign="$" data-key="tier1" aria-pressed="false">
+          <span class="sign" dir="ltr">$</span><span class="range" dir="ltr">Under $15</span>
         </button>
-        <button type="button" class="tier" data-tier="2" data-label="$$ ($15–30 per person)" aria-pressed="true">
-          <span class="sign">$$</span><span class="range">$15&ndash;30</span>
+        <button type="button" class="tier" data-tier="2" data-sign="$$" data-key="tier2" aria-pressed="true">
+          <span class="sign" dir="ltr">$$</span><span class="range" dir="ltr">$15&ndash;30</span>
         </button>
-        <button type="button" class="tier" data-tier="3" data-label="$$$ ($30–60 per person)" aria-pressed="false">
-          <span class="sign">$$$</span><span class="range">$30&ndash;60</span>
+        <button type="button" class="tier" data-tier="3" data-sign="$$$" data-key="tier3" aria-pressed="false">
+          <span class="sign" dir="ltr">$$$</span><span class="range" dir="ltr">$30&ndash;60</span>
         </button>
-        <button type="button" class="tier" data-tier="4" data-label="$$$$ ($60+ per person)" aria-pressed="false">
-          <span class="sign">$$$$</span><span class="range">$60+</span>
+        <button type="button" class="tier" data-tier="4" data-sign="$$$$" data-key="tier4" aria-pressed="false">
+          <span class="sign" dir="ltr">$$$$</span><span class="range" dir="ltr">$60+</span>
         </button>
       </div>
     </div>
@@ -413,7 +496,7 @@
 
   <div id="output"></div>
 
-  <footer>
+  <footer id="footerText">
     Results are pulled live from the web and may change &mdash; call ahead to confirm hours and prices.
   </footer>
 
@@ -427,15 +510,156 @@
   const tierGrid = document.getElementById('tierGrid');
   const submitBtn = document.getElementById('submitBtn');
   const output = document.getElementById('output');
+  const langButtons = document.querySelectorAll('.lang-btn');
 
-  let selectedTier = { value: 2, label: '$$ ($15–30 per person)' };
+  const translations = {
+    en: {
+      eyebrow: 'no account · no filters · just dinner',
+      headlineLine1: 'Where you are.',
+      headlineLine2Pre: "What you'll ",
+      headlineGlow: 'spend.',
+      sub: "That's all we need. Give us your ZIP code and a budget, and we'll find real restaurants nearby that fit.",
+      zipLabel: 'Zip code',
+      zipError: 'Enter a 5-digit ZIP code.',
+      tierLabel: 'Budget per person',
+      tier1: 'Under $15',
+      tier2: '$15–30',
+      tier3: '$30–60',
+      tier4: '$60+',
+      submit: 'Find my table',
+      searching: 'Searching…',
+      loading: 'Checking the neighborhood',
+      errorBody: "Couldn't pull up results just now. Check your connection and try again.",
+      retry: 'Try again',
+      resultsHead: 'Tables near',
+      found: 'found',
+      noResultsPre: 'Nothing matched',
+      noResultsPost: 'at that budget. Try a wider price range, or double check the ZIP.',
+      reviewsSuffix: 'Google review',
+      reviewsSuffixPlural: 'Google reviews',
+      noReviews: 'No ratings yet on Google',
+      openNow: 'Open now',
+      closedNow: 'Closed',
+      closesAt: 'Closes',
+      opensAt: 'Opens',
+      viewOnMaps: 'view on Google Maps',
+      footer: 'Results are pulled live from the web and may change — call ahead to confirm hours and prices.'
+    },
+    es: {
+      eyebrow: 'sin cuenta · sin filtros · solo cena',
+      headlineLine1: 'Dónde estás.',
+      headlineLine2Pre: 'Y cuánto vas a ',
+      headlineGlow: 'gastar.',
+      sub: 'Eso es todo lo que necesitamos. Danos tu código postal y un presupuesto, y encontraremos restaurantes reales cerca que se ajusten.',
+      zipLabel: 'Código postal',
+      zipError: 'Ingresa un código postal de 5 dígitos.',
+      tierLabel: 'Presupuesto por persona',
+      tier1: 'Menos de $15',
+      tier2: '$15–30',
+      tier3: '$30–60',
+      tier4: '$60+',
+      submit: 'Buscar mesa',
+      searching: 'Buscando…',
+      loading: 'Revisando el barrio',
+      errorBody: 'No pudimos cargar resultados. Revisa tu conexión e intenta de nuevo.',
+      retry: 'Intentar de nuevo',
+      resultsHead: 'Mesas cerca de',
+      found: 'encontrados',
+      noResultsPre: 'Nada coincidió con',
+      noResultsPost: 'con ese presupuesto. Prueba un rango más amplio o revisa el código postal.',
+      reviewsSuffix: 'reseña de Google',
+      reviewsSuffixPlural: 'reseñas de Google',
+      noReviews: 'Aún sin calificación en Google',
+      openNow: 'Abierto ahora',
+      closedNow: 'Cerrado',
+      closesAt: 'Cierra',
+      opensAt: 'Abre',
+      viewOnMaps: 'ver en Google Maps',
+      footer: 'Los resultados se obtienen en vivo de la web y pueden cambiar — llama antes para confirmar horarios y precios.'
+    },
+    ar: {
+      eyebrow: 'بلا حساب · بلا فلاتر · فقط العشاء',
+      headlineLine1: 'أين أنت.',
+      headlineLine2Pre: 'وكم ',
+      headlineGlow: 'ستصرف.',
+      sub: 'هذا كل ما نحتاجه. أعطنا الرمز البريدي وميزانيتك، وسنجد لك مطاعم حقيقية قريبة تناسبك.',
+      zipLabel: 'الرمز البريدي',
+      zipError: 'أدخل رمزًا بريديًا من 5 أرقام.',
+      tierLabel: 'الميزانية للشخص',
+      tier1: 'أقل من 15$',
+      tier2: '15–30$',
+      tier3: '30–60$',
+      tier4: '+60$',
+      submit: 'ابحث عن طاولة',
+      searching: 'جارٍ البحث…',
+      loading: 'نتحقق من المنطقة',
+      errorBody: 'تعذر تحميل النتائج الآن. تحقق من اتصالك وحاول مرة أخرى.',
+      retry: 'حاول مرة أخرى',
+      resultsHead: 'طاولات قريبة من',
+      found: 'نتيجة',
+      noResultsPre: 'لا توجد نتائج لـ',
+      noResultsPost: 'بهذه الميزانية. جرّب نطاق سعر أوسع أو تحقق من الرمز البريدي.',
+      reviewsSuffix: 'تقييم على جوجل',
+      reviewsSuffixPlural: 'تقييمات على جوجل',
+      noReviews: 'لا توجد تقييمات على جوجل بعد',
+      openNow: 'مفتوح الآن',
+      closedNow: 'مغلق',
+      closesAt: 'يغلق',
+      opensAt: 'يفتح',
+      viewOnMaps: 'عرض على خرائط جوجل',
+      footer: 'النتائج مأخوذة مباشرة من الويب وقد تتغير — يرجى الاتصال للتأكد من المواعيد والأسعار.'
+    }
+  };
+
+  let currentLang = 'en';
+  let selectedTier = { value: '2', sign: '$$' };
+
+  function t(key){
+    return translations[currentLang][key];
+  }
+
+  function applyLanguage(lang){
+    currentLang = lang;
+    document.documentElement.lang = lang;
+    document.documentElement.dir = (lang === 'ar') ? 'rtl' : 'ltr';
+
+    langButtons.forEach(function(b){
+      b.setAttribute('aria-pressed', b.dataset.lang === lang ? 'true' : 'false');
+    });
+
+    document.getElementById('eyebrowText').textContent = t('eyebrow');
+    document.getElementById('headlineLine1').textContent = t('headlineLine1');
+    document.getElementById('headlineLine2Pre').textContent = t('headlineLine2Pre');
+    document.getElementById('headlineGlow').textContent = t('headlineGlow');
+    document.getElementById('subText').textContent = t('sub');
+    document.getElementById('zipLabel').textContent = t('zipLabel');
+    document.getElementById('tierLabel').textContent = t('tierLabel');
+    document.getElementById('submitBtn').textContent = t('submit');
+    document.getElementById('footerText').textContent = t('footer');
+    zipError.textContent = '';
+
+    tierGrid.querySelectorAll('.tier').forEach(function(btn){
+      const key = btn.dataset.key;
+      btn.querySelector('.range').textContent = t(key);
+    });
+
+    // Results so far were rendered in the previous language — clear them
+    // rather than show a mismatched mix of languages.
+    output.innerHTML = '';
+  }
+
+  langButtons.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      applyLanguage(btn.dataset.lang);
+    });
+  });
 
   tierGrid.addEventListener('click', function(e){
     const btn = e.target.closest('.tier');
     if(!btn) return;
     tierGrid.querySelectorAll('.tier').forEach(b => b.setAttribute('aria-pressed','false'));
     btn.setAttribute('aria-pressed','true');
-    selectedTier = { value: btn.dataset.tier, label: btn.dataset.label };
+    selectedTier = { value: btn.dataset.tier, sign: btn.dataset.sign };
   });
 
   function setStatus(html){
@@ -448,12 +672,44 @@
     });
   }
 
+  const localeMap = { en: 'en-US', es: 'es-ES', ar: 'ar' };
+
+  function formatTime(isoString){
+    if(!isoString) return '';
+    try{
+      const d = new Date(isoString);
+      return d.toLocaleTimeString(localeMap[currentLang] || 'en-US', { hour: 'numeric', minute: '2-digit', numberingSystem: 'latn' });
+    }catch(e){
+      return '';
+    }
+  }
+
+  function hoursBadge(open, nextChangeTime){
+    const timeStr = formatTime(nextChangeTime);
+    const timeHtml = timeStr ? '<span dir="ltr">' + escapeHtml(timeStr) + '</span>' : '';
+    if(open === true){
+      const tail = timeStr ? ' &middot; ' + escapeHtml(t('closesAt')) + ' ' + timeHtml : '';
+      return '<span class="hours-badge open"><span class="dot"></span>' + escapeHtml(t('openNow')) + tail + '</span>';
+    }
+    if(open === false){
+      const tail = timeStr ? ' &middot; ' + escapeHtml(t('opensAt')) + ' ' + timeHtml : '';
+      return '<span class="hours-badge closed"><span class="dot"></span>' + escapeHtml(t('closedNow')) + tail + '</span>';
+    }
+    return '';
+  }
+
+  function photoBlock(photoName){
+    if(!photoName) return '';
+    const src = '/api/photo?name=' + encodeURIComponent(photoName) + '&w=400';
+    return '<div class="ticket-photo"><img src="' + src + '" alt="" loading="lazy" onerror="this.parentElement.remove()"></div>';
+  }
+
   function renderResults(zip, tierSign, restaurants){
     if(!restaurants || restaurants.length === 0){
       setStatus(
         '<div class="error-box">' +
-          '<p>Nothing matched ' + escapeHtml(zip) + ' at that budget. Try a wider price range, or double check the ZIP.</p>' +
-          '<button class="retry" id="retryBtn">Try again</button>' +
+          '<p>' + escapeHtml(t('noResultsPre')) + ' ' + escapeHtml(zip) + ' ' + escapeHtml(t('noResultsPost')) + '</p>' +
+          '<button class="retry" id="retryBtn">' + escapeHtml(t('retry')) + '</button>' +
         '</div>'
       );
       document.getElementById('retryBtn').addEventListener('click', function(){ setStatus(''); zipInput.focus(); });
@@ -463,31 +719,33 @@
     const cards = restaurants.map(function(r, i){
       const num = String(i + 1).padStart(3, '0');
       const ratingHtml = (r.rating !== null && r.rating !== undefined)
-        ? '<span class="rating">' + escapeHtml(r.rating) + '&#9733;</span> &middot; '
+        ? '<span class="rating" dir="ltr">' + escapeHtml(r.rating) + '&#9733;</span> &middot; '
         : '';
       const reviewLine = (r.reviews !== null && r.reviews !== undefined)
-        ? r.reviews + ' Google review' + (r.reviews === 1 ? '' : 's')
-        : 'No ratings yet on Google';
+        ? r.reviews + ' ' + (r.reviews === 1 ? t('reviewsSuffix') : t('reviewsSuffixPlural'))
+        : t('noReviews');
+      const href = r.mapsUri || ('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(r.name + ' ' + (r.area || zip)));
       return (
-        '<article class="ticket">' +
-          '<div class="stamp">' + escapeHtml(r.price_tier || tierSign) + '</div>' +
-          '<p class="ticket-num">TICKET #' + num + '</p>' +
+        '<a class="ticket" href="' + escapeHtml(href) + '" target="_blank" rel="noopener noreferrer" aria-label="' + escapeHtml(r.name) + ' — ' + escapeHtml(t('viewOnMaps')) + '">' +
+          photoBlock(r.photoName) +
+          '<div class="stamp" dir="ltr">' + escapeHtml(r.price_tier || tierSign) + '</div>' +
+          '<p class="ticket-num" dir="ltr">TICKET #' + num + '</p>' +
           '<h3>' + escapeHtml(r.name || 'Unnamed spot') + '</h3>' +
           '<p class="cuisine">' + ratingHtml + escapeHtml(r.cuisine || 'Restaurant') + '</p>' +
           '<hr class="divider">' +
-          '<p class="blurb">' + escapeHtml(reviewLine) + '</p>' +
+          '<p class="blurb">' + hoursBadge(r.open, r.nextChangeTime) + escapeHtml(reviewLine) + '</p>' +
           '<p class="area">' +
             '<svg viewBox="0 0 24 24"><path d="M12 2C7.6 2 4 5.6 4 10c0 5.4 8 12 8 12s8-6.6 8-12c0-4.4-3.6-8-8-8zm0 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>' +
             escapeHtml(r.area || zip) +
           '</p>' +
-        '</article>'
+        '</a>'
       );
     }).join('');
 
     setStatus(
       '<div class="results-head">' +
-        '<h2>Tables near ' + escapeHtml(zip) + '</h2>' +
-        '<span class="meta">' + restaurants.length + ' found &middot; ' + escapeHtml(tierSign) + '</span>' +
+        '<h2>' + escapeHtml(t('resultsHead')) + ' ' + escapeHtml(zip) + '</h2>' +
+        '<span class="meta">' + restaurants.length + ' ' + escapeHtml(t('found')) + ' &middot; ' + escapeHtml(tierSign) + '</span>' +
       '</div>' +
       '<div class="grid">' + cards + '</div>'
     );
@@ -499,7 +757,7 @@
     const response = await fetch('/api/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ zip: zip, tier: tierValue })
+      body: JSON.stringify({ zip: zip, tier: tierValue, lang: currentLang })
     });
 
     const data = await response.json().catch(function(){ return {}; });
@@ -516,33 +774,33 @@
     const zip = zipInput.value.trim();
 
     if(!/^\d{5}$/.test(zip)){
-      zipError.textContent = 'Enter a 5-digit ZIP code.';
+      zipError.textContent = t('zipError');
       zipInput.focus();
       return;
     }
     zipError.textContent = '';
 
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Searching…';
+    submitBtn.textContent = t('searching');
     setStatus(
-      '<p class="status">Checking the neighborhood<span class="dots"><span>.</span><span>.</span><span>.</span></span></p>'
+      '<p class="status">' + escapeHtml(t('loading')) + '<span class="dots"><span>.</span><span>.</span><span>.</span></span></p>'
     );
 
     try{
       const restaurants = await searchRestaurants(zip, selectedTier.value);
-      renderResults(zip, selectedTier.label.split(' ')[0], restaurants);
+      renderResults(zip, selectedTier.sign, restaurants);
     }catch(err){
       console.error('Porchlight search error:', err);
       setStatus(
         '<div class="error-box">' +
-          '<p>Couldn\'t pull up results just now. Check your connection and try again.</p>' +
-          '<button class="retry" id="retryBtn">Try again</button>' +
+          '<p>' + escapeHtml(t('errorBody')) + '</p>' +
+          '<button class="retry" id="retryBtn">' + escapeHtml(t('retry')) + '</button>' +
         '</div>'
       );
       document.getElementById('retryBtn').addEventListener('click', function(){ form.requestSubmit(); });
     }finally{
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Find my table';
+      submitBtn.textContent = t('submit');
     }
   });
 
