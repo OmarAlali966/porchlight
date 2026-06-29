@@ -7,7 +7,7 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const { zip, tier } = req.body || {};
+  const { zip, tier, lang } = req.body || {};
 
   if (!zip || !/^\d{5}$/.test(zip)) {
     res.status(400).json({ error: 'Invalid ZIP code' });
@@ -28,6 +28,8 @@ module.exports = async function handler(req, res) {
     PRICE_LEVEL_VERY_EXPENSIVE: '$$$$'
   };
 
+  const allowedLangs = ['en', 'es', 'ar'];
+  const languageCode = allowedLangs.indexOf(lang) !== -1 ? lang : 'en';
   const priceLevels = priceLevelMap[String(tier)] || priceLevelMap['2'];
 
   try {
@@ -36,11 +38,22 @@ module.exports = async function handler(req, res) {
       headers: {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': process.env.GOOGLE_PLACES_API_KEY,
-        'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.priceLevel,places.rating,places.userRatingCount,places.types'
+        'X-Goog-FieldMask': [
+          'places.displayName',
+          'places.formattedAddress',
+          'places.priceLevel',
+          'places.rating',
+          'places.userRatingCount',
+          'places.types',
+          'places.currentOpeningHours',
+          'places.googleMapsUri',
+          'places.photos'
+        ].join(',')
       },
       body: JSON.stringify({
         textQuery: 'restaurants near ' + zip,
         priceLevels: priceLevels,
+        languageCode: languageCode,
         pageSize: 8
       })
     });
@@ -65,13 +78,35 @@ module.exports = async function handler(req, res) {
         ? types[0].replace(/_/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); })
         : 'Restaurant';
 
+      let openNow = null;
+      let nextChangeTime = null;
+      if (p.currentOpeningHours) {
+        if (typeof p.currentOpeningHours.openNow === 'boolean') {
+          openNow = p.currentOpeningHours.openNow;
+        }
+        if (openNow === true && p.currentOpeningHours.nextCloseTime) {
+          nextChangeTime = p.currentOpeningHours.nextCloseTime;
+        } else if (openNow === false && p.currentOpeningHours.nextOpenTime) {
+          nextChangeTime = p.currentOpeningHours.nextOpenTime;
+        }
+      }
+
+      let photoName = null;
+      if (Array.isArray(p.photos) && p.photos.length > 0 && p.photos[0].name) {
+        photoName = p.photos[0].name;
+      }
+
       return {
         name: (p.displayName && p.displayName.text) || 'Unnamed spot',
         cuisine: cuisine,
         price_tier: priceSignMap[p.priceLevel] || '',
         area: p.formattedAddress || zip,
         rating: typeof p.rating === 'number' ? p.rating : null,
-        reviews: typeof p.userRatingCount === 'number' ? p.userRatingCount : null
+        reviews: typeof p.userRatingCount === 'number' ? p.userRatingCount : null,
+        open: openNow,
+        nextChangeTime: nextChangeTime,
+        mapsUri: p.googleMapsUri || null,
+        photoName: photoName
       };
     });
 
