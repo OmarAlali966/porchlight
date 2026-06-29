@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Porchlight — Find a table near you</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=Karla:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg: #101D27;
+    --bg-deep: #0A1620;
+    --card-bg: #19293480;
+    --card-bg-solid: #1B2C38;
+    --line: rgba(244,237,228,0.14);
+    --accent: #FF6B35;
+    --accent-soft: rgba(255,107,53,0.18);
+    --accent-2: #4ECDC4;
+    --text: #F4EDE4;
+    --text-muted: #8FA3AE;
+    --font-display: 'Bebas Neue', sans-serif;
+    --font-body: 'Karla', sans-serif;
+    --font-mono: 'Space Mono', monospace;
+  }
+
+  *{ box-sizing: border-box; }
+  html, body{ margin:0; padding:0; }
+
+  body{
+    background: radial-gradient(ellipse 1200px 700px at 50% -10%, #1A2B38 0%, var(--bg) 55%, var(--bg-deep) 100%);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    padding: 0 20px 80px;
+  }
+
+  a{ color: var(--accent-2); }
+
+  /* ---------- layout shells ---------- */
+  .wrap{ max-width: 880px; margin: 0 auto; }
+
+  header.top{
+    display:flex; align-items:center; gap:10px;
+    padding: 32px 0 0;
+  }
+  .mark{ width:30px; height:30px; flex:0 0 auto; }
+  .mark path{ fill: none; stroke: var(--accent); stroke-width: 6; }
+  .wordmark{
+    font-family: var(--font-display);
+    font-size: 22px;
+    letter-spacing: 2px;
+    color: var(--text);
+  }
+  .wordmark span{ color: var(--accent); }
+
+  /* ---------- hero ---------- */
+  .hero{ padding: 56px 0 36px; text-align:center; }
+  .eyebrow{
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 3px;
+    color: var(--accent-2);
+    text-transform: uppercase;
+    margin: 0 0 14px;
+  }
+  h1{
+    font-family: var(--font-display);
+    font-weight: 400;
+    text-transform: uppercase;
+    font-size: clamp(36px, 7vw, 64px);
+    line-height: 1.05;
+    letter-spacing: 1px;
+    margin: 0 0 18px;
+    color: var(--text);
+    text-shadow: 0 0 10px var(--accent-soft), 0 0 30px rgba(255,107,53,0.25);
+  }
+  h1 .glow{ color: var(--accent); }
+
+  @media (prefers-reduced-motion: no-preference){
+    h1 .glow{ animation: flicker 5.5s infinite ease-in-out; }
+  }
+  @keyframes flicker{
+    0%, 92%, 100% { opacity: 1; }
+    93% { opacity: 0.55; }
+    94% { opacity: 1; }
+    95% { opacity: 0.65; }
+    96% { opacity: 1; }
+  }
+
+  .sub{
+    max-width: 480px;
+    margin: 0 auto;
+    color: var(--text-muted);
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  /* ---------- form card ---------- */
+  form.search{
+    background: var(--card-bg-solid);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 28px 28px 26px;
+    margin: 36px 0 8px;
+    box-shadow: 0 24px 60px -30px rgba(0,0,0,0.7);
+  }
+
+  .field-label{
+    display:block;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .zip-row{ margin-bottom: 26px; }
+  input#zip{
+    width: 100%;
+    background: var(--bg-deep);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 22px;
+    letter-spacing: 4px;
+    padding: 14px 16px;
+    outline: none;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  input#zip::placeholder{ color: #4D6273; letter-spacing: 4px; }
+  input#zip:focus-visible{
+    border-color: var(--accent-2);
+    box-shadow: 0 0 0 3px rgba(78,205,196,0.25);
+  }
+  .zip-error{
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--accent);
+    margin-top: 8px;
+    min-height: 14px;
+  }
+
+  .tier-grid{
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  @media (max-width: 560px){
+    .tier-grid{ grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .tier{
+    position: relative;
+    cursor: pointer;
+    background: var(--bg-deep);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-family: var(--font-body);
+    text-align: left;
+    padding: 12px 14px 12px 18px;
+    border-radius: 4px;
+    clip-path: polygon(10px 0, 100% 0, 100% 100%, 10px 100%, 0 50%);
+    transition: border-color .15s ease, background .15s ease, transform .1s ease;
+  }
+  .tier:hover{ border-color: var(--accent-2); }
+  .tier:focus-visible{ outline: 2px solid var(--accent-2); outline-offset: 2px; }
+  .tier .sign{
+    display:block;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: var(--accent-2);
+    font-size: 16px;
+    margin-bottom: 2px;
+  }
+  .tier .range{
+    display:block;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .tier[aria-pressed="true"]{
+    background: var(--accent-soft);
+    border-color: var(--accent);
+  }
+  .tier[aria-pressed="true"] .sign{ color: var(--accent); }
+  .tier[aria-pressed="true"] .range{ color: var(--text); }
+
+  button.submit{
+    width: 100%;
+    background: var(--accent);
+    color: #1A0E08;
+    border: none;
+    border-radius: 10px;
+    font-family: var(--font-display);
+    font-size: 20px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 16px;
+    cursor: pointer;
+    transition: filter .15s ease, transform .05s ease;
+  }
+  button.submit:hover{ filter: brightness(1.08); }
+  button.submit:active{ transform: translateY(1px); }
+  button.submit:disabled{ filter: grayscale(0.4) brightness(0.8); cursor: default; }
+  button.submit:focus-visible{ outline: 2px solid var(--accent-2); outline-offset: 3px; }
+
+  /* ---------- status states ---------- */
+  .status{
+    text-align: center;
+    padding: 40px 0;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 14px;
+  }
+  .dots span{
+    animation: blink 1.4s infinite;
+  }
+  .dots span:nth-child(2){ animation-delay: .2s; }
+  .dots span:nth-child(3){ animation-delay: .4s; }
+  @media (prefers-reduced-motion: no-preference){
+    @keyframes blink{ 0%, 80%, 100% { opacity: .2; } 40% { opacity: 1; } }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .dots span{ opacity: 1; animation: none; }
+  }
+
+  .error-box{
+    text-align:center;
+    padding: 30px 24px;
+    border: 1px dashed var(--accent);
+    border-radius: 14px;
+    color: var(--text);
+    margin-top: 20px;
+  }
+  .error-box p{ color: var(--text-muted); margin: 8px 0 18px; font-size: 14px; }
+  .retry{
+    background: none;
+    border: 1px solid var(--accent-2);
+    color: var(--accent-2);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    letter-spacing: 1px;
+    padding: 10px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .retry:hover{ background: rgba(78,205,196,0.1); }
+
+  /* ---------- results ---------- */
+  .results-head{
+    display:flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin: 44px 0 18px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .results-head h2{
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    font-size: 26px;
+    letter-spacing: 1px;
+    margin: 0;
+  }
+  .results-head .meta{
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 28px 22px;
+  }
+
+  .ticket{
+    position: relative;
+    background: var(--card-bg-solid);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 22px 20px 20px;
+    margin: 10px 0;
+  }
+  .ticket::before, .ticket::after{
+    content: "";
+    position: absolute;
+    left: 0; right: 0;
+    height: 14px;
+    background-image: radial-gradient(circle at 10px 50%, var(--bg) 6px, transparent 6.6px);
+    background-size: 20px 14px;
+    background-repeat: repeat-x;
+    background-color: var(--card-bg-solid);
+  }
+  .ticket::before{ top: -7px; border-radius: 6px 6px 0 0; }
+  .ticket::after{ bottom: -7px; border-radius: 0 0 6px 6px; transform: scaleY(-1); }
+
+  .ticket-num{
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    margin: 0 0 10px;
+  }
+  .stamp{
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    border: 2px dashed var(--accent-2);
+    color: var(--accent-2);
+    display:flex; align-items:center; justify-content:center;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 13px;
+    transform: rotate(-9deg);
+  }
+  .ticket h3{
+    font-family: var(--font-display);
+    font-size: 24px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 6px;
+    padding-right: 50px;
+  }
+  .ticket .cuisine{
+    color: var(--text-muted);
+    font-size: 13px;
+    margin: 0 0 14px;
+  }
+  .ticket .rating{ color: var(--accent); font-weight: 700; }
+  .divider{
+    border: none;
+    border-top: 1px dashed var(--line);
+    margin: 14px 0;
+  }
+  .ticket .blurb{
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text);
+    margin: 0 0 14px;
+  }
+  .ticket .area{
+    display:flex; align-items:center; gap:6px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .ticket .area svg{ width:12px; height:12px; flex:0 0 auto; }
+  .ticket .area svg path{ fill: var(--accent-2); }
+
+  footer{
+    text-align:center;
+    margin-top: 60px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+
+  .visually-hidden{
+    position:absolute; width:1px; height:1px;
+    overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="top">
+    <svg class="mark" viewBox="0 0 30 30"><path d="M15 3 C9 3 5 8 5 14 C5 21 15 27 15 27 C15 27 25 21 25 14 C25 8 21 3 15 3 Z M15 11 a3 3 0 1 0 0.1 0"/></svg>
+    <span class="wordmark">PORCH<span>LIGHT</span></span>
+  </header>
+
+  <section class="hero">
+    <p class="eyebrow">no account &middot; no filters &middot; just dinner</p>
+    <h1>Where you are.<br>What you'll <span class="glow">spend.</span></h1>
+    <p class="sub">That's all we need. Give us your ZIP code and a budget, and we'll find real restaurants nearby that fit.</p>
+  </section>
+
+  <form class="search" id="searchForm" novalidate>
+    <div class="zip-row">
+      <label class="field-label" for="zip">Zip code</label>
+      <input type="text" id="zip" name="zip" inputmode="numeric" maxlength="5" placeholder="33139" autocomplete="postal-code">
+      <div class="zip-error" id="zipError" role="alert"></div>
+    </div>
+
+    <div>
+      <span class="field-label" id="tierLabel">Budget per person</span>
+      <div class="tier-grid" role="group" aria-labelledby="tierLabel" id="tierGrid">
+        <button type="button" class="tier" data-tier="1" data-label="$ (under $15 per person)" aria-pressed="false">
+          <span class="sign">$</span><span class="range">Under $15</span>
+        </button>
+        <button type="button" class="tier" data-tier="2" data-label="$$ ($15–30 per person)" aria-pressed="true">
+          <span class="sign">$$</span><span class="range">$15&ndash;30</span>
+        </button>
+        <button type="button" class="tier" data-tier="3" data-label="$$$ ($30–60 per person)" aria-pressed="false">
+          <span class="sign">$$$</span><span class="range">$30&ndash;60</span>
+        </button>
+        <button type="button" class="tier" data-tier="4" data-label="$$$$ ($60+ per person)" aria-pressed="false">
+          <span class="sign">$$$$</span><span class="range">$60+</span>
+        </button>
+      </div>
+    </div>
+
+    <button type="submit" class="submit" id="submitBtn">Find my table</button>
+  </form>
+
+  <div id="output"></div>
+
+  <footer>
+    Results are pulled live from the web and may change &mdash; call ahead to confirm hours and prices.
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  const form = document.getElementById('searchForm');
+  const zipInput = document.getElementById('zip');
+  const zipError = document.getElementById('zipError');
+  const tierGrid = document.getElementById('tierGrid');
+  const submitBtn = document.getElementById('submitBtn');
+  const output = document.getElementById('output');
+
+  let selectedTier = { value: 2, label: '$$ ($15–30 per person)' };
+
+  tierGrid.addEventListener('click', function(e){
+    const btn = e.target.closest('.tier');
+    if(!btn) return;
+    tierGrid.querySelectorAll('.tier').forEach(b => b.setAttribute('aria-pressed','false'));
+    btn.setAttribute('aria-pressed','true');
+    selectedTier = { value: btn.dataset.tier, label: btn.dataset.label };
+  });
+
+  function setStatus(html){
+    output.innerHTML = html;
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+    });
+  }
+
+  function renderResults(zip, tierSign, restaurants){
+    if(!restaurants || restaurants.length === 0){
+      setStatus(
+        '<div class="error-box">' +
+          '<p>Nothing matched ' + escapeHtml(zip) + ' at that budget. Try a wider price range, or double check the ZIP.</p>' +
+          '<button class="retry" id="retryBtn">Try again</button>' +
+        '</div>'
+      );
+      document.getElementById('retryBtn').addEventListener('click', function(){ setStatus(''); zipInput.focus(); });
+      return;
+    }
+
+    const cards = restaurants.map(function(r, i){
+      const num = String(i + 1).padStart(3, '0');
+      const ratingHtml = (r.rating !== null && r.rating !== undefined)
+        ? '<span class="rating">' + escapeHtml(r.rating) + '&#9733;</span> &middot; '
+        : '';
+      const reviewLine = (r.reviews !== null && r.reviews !== undefined)
+        ? r.reviews + ' Google review' + (r.reviews === 1 ? '' : 's')
+        : 'No ratings yet on Google';
+      return (
+        '<article class="ticket">' +
+          '<div class="stamp">' + escapeHtml(r.price_tier || tierSign) + '</div>' +
+          '<p class="ticket-num">TICKET #' + num + '</p>' +
+          '<h3>' + escapeHtml(r.name || 'Unnamed spot') + '</h3>' +
+          '<p class="cuisine">' + ratingHtml + escapeHtml(r.cuisine || 'Restaurant') + '</p>' +
+          '<hr class="divider">' +
+          '<p class="blurb">' + escapeHtml(reviewLine) + '</p>' +
+          '<p class="area">' +
+            '<svg viewBox="0 0 24 24"><path d="M12 2C7.6 2 4 5.6 4 10c0 5.4 8 12 8 12s8-6.6 8-12c0-4.4-3.6-8-8-8zm0 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>' +
+            escapeHtml(r.area || zip) +
+          '</p>' +
+        '</article>'
+      );
+    }).join('');
+
+    setStatus(
+      '<div class="results-head">' +
+        '<h2>Tables near ' + escapeHtml(zip) + '</h2>' +
+        '<span class="meta">' + restaurants.length + ' found &middot; ' + escapeHtml(tierSign) + '</span>' +
+      '</div>' +
+      '<div class="grid">' + cards + '</div>'
+    );
+  }
+
+  async function searchRestaurants(zip, tierValue){
+    // This calls our own backend (/api/search), which holds the secret API key.
+    // See api/search.js — the key never touches the browser.
+    const response = await fetch('/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ zip: zip, tier: tierValue })
+    });
+
+    const data = await response.json().catch(function(){ return {}; });
+
+    if(!response.ok){
+      throw new Error(data.error || ('Request failed with status ' + response.status));
+    }
+
+    return data.restaurants || [];
+  }
+
+  form.addEventListener('submit', async function(e){
+    e.preventDefault();
+    const zip = zipInput.value.trim();
+
+    if(!/^\d{5}$/.test(zip)){
+      zipError.textContent = 'Enter a 5-digit ZIP code.';
+      zipInput.focus();
+      return;
+    }
+    zipError.textContent = '';
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Searching…';
+    setStatus(
+      '<p class="status">Checking the neighborhood<span class="dots"><span>.</span><span>.</span><span>.</span></span></p>'
+    );
+
+    try{
+      const restaurants = await searchRestaurants(zip, selectedTier.value);
+      renderResults(zip, selectedTier.label.split(' ')[0], restaurants);
+    }catch(err){
+      console.error('Porchlight search error:', err);
+      setStatus(
+        '<div class="error-box">' +
+          '<p>Couldn\'t pull up results just now. Check your connection and try again.</p>' +
+          '<button class="retry" id="retryBtn">Try again</button>' +
+        '</div>'
+      );
+      document.getElementById('retryBtn').addEventListener('click', function(){ form.requestSubmit(); });
+    }finally{
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Find my table';
+    }
+  });
+
+  zipInput.addEventListener('input', function(){
+    zipInput.value = zipInput.value.replace(/\D/g, '').slice(0,5);
+  });
+})();
+</script>
+
+</body>
+</html>
